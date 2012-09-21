@@ -72,14 +72,16 @@ class ReflexAgent(Agent):
     #print "SuccessorGameState: " + str(successorGameState)
     #print "newPos: " + str(newPos)
     #print "newFood: " + str(newFood)
-    print newGhostStates
+    #print newGhostStates
     #print "newScaredTimes: " + str(newGhostStates)
     if newFood.asList():
       closestFood = min([util.manhattanDistance(newPos, x) for x in newFood.asList()])
-      additionalFeatures += 1/closestFood
+      additionalFeatures += (.5/closestFood)
 
-    #closestGhost = min([util.manhattanDistance(newPos, x)] for x in newGhostStates.getGhostPositions())
-    #additionalFeatures -= 1/closestGhost
+    if newGhostStates:
+      closestGhost = min([util.manhattanDistance(newPos, x.getPosition()) for x in newGhostStates])
+      if closestGhost != 0:
+        additionalFeatures -= 1/closestGhost
 
     return successorGameState.getScore() + additionalFeatures
 
@@ -139,7 +141,37 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns the total number of agents in the game
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    depth = self.depth
+    #print max([(self.minValue(gameState.generateSuccessor(0, legalAction), depth), legalAction) for legalAction in gameState.getLegalActions(0)])[0]
+    return max([(self.minValue(gameState.generateSuccessor(0, legalAction), depth), legalAction) for legalAction in gameState.getLegalActions(0)])[1]
+
+  def maxValue(self, gameState, depth):
+    print("max..." + str(depth))
+    if(gameState.isWin() or gameState.isLose() or depth == 0):
+      return self.evaluationFunction(gameState)
+    v_values = [float("-inf")]
+    for legalAction in gameState.getLegalActions(0):
+      v_values.append(self.minValue(gameState.generateSuccessor(0, legalAction), depth))
+    print v_values
+    return max(v_values)
+          
+  def minValue(self, gameState, depth):
+    print("min..." + str(depth))
+    v_values = [float("inf")]
+    posGameStates = [gameState]
+    ghost_num = 1
+    while(ghost_num <= gameState.getNumAgents() - 1):
+      tmp = []
+      for posGameState in posGameStates:
+        for legalAction in posGameState.getLegalActions(ghost_num):
+          tmp.append(posGameState.generateSuccessor(ghost_num, legalAction))
+      if tmp != []:
+        posGameStates = tmp
+      ghost_num += 1
+    for posGameState in posGameStates:
+      v_values.append(self.maxValue(posGameState, depth - 1))
+    print v_values
+    return min(v_values)
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
   """
